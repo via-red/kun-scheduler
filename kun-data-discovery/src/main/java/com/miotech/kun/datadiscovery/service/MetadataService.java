@@ -2,6 +2,8 @@ package com.miotech.kun.datadiscovery.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.miotech.kun.common.model.AcknowledgementVO;
 import com.miotech.kun.commons.utils.ExceptionUtils;
 import com.miotech.kun.datadiscovery.model.vo.PullProcessVO;
@@ -14,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -36,6 +39,14 @@ public class MetadataService {
 
     @Autowired
     RestTemplate restTemplate;
+
+    public List<String> searchTags(String keyword) {
+        String fullUrl = url + "/tags";
+        log.info("Request url : " + fullUrl);
+        Map<String, String> params = ImmutableMap.of("keyword", keyword);
+        return restTemplate.exchange(fullUrl, HttpMethod.GET, null, new ParameterizedTypeReference<List<String>>() {
+        }, params).getBody();
+    }
 
     public PullProcessVO pullDataset(Long datasetId) {
         String fullUrl = url + "/datasets/{id}/_pull";
