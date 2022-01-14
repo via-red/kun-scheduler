@@ -4,11 +4,14 @@ import com.google.inject.Inject;
 import com.miotech.kun.commons.db.DatabaseOperator;
 import com.miotech.kun.commons.testing.DatabaseTestBase;
 import com.miotech.kun.metadata.core.model.dataset.DataStore;
+import com.miotech.kun.metadata.core.model.dataset.DatabaseBaseInfo;
 import com.miotech.kun.metadata.core.model.dataset.Dataset;
 import com.miotech.kun.metadata.core.model.dataset.DatasetField;
 import com.miotech.kun.workflow.core.model.lineage.ArangoCollectionStore;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.shaded.com.google.common.collect.ImmutableList;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.shazam.shazamcrest.matcher.Matchers.sameBeanAs;
@@ -120,6 +123,13 @@ public class MetadataDatasetDaoTest extends DatabaseTestBase {
         assertThat(dataset.getFields().size(), is(1));
         DatasetField datasetField = dataset.getFields().get(0);
         assertThat(datasetField.getName(), is(fieldName));
+    }
+
+    @Test
+    public void testGetDatabases_emptyParam() {
+        List<Long> emptyParams = ImmutableList.of();
+        List<DatabaseBaseInfo> databases = metadataDatasetDao.getDatabases(emptyParams);
+        assertThat(databases.size(), is(0));
     }
 
 }
