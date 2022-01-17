@@ -1,8 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Popconfirm, Space, Table } from 'antd';
-import { useRequest, useUpdateEffect } from 'ahooks';
+import { useUpdateEffect, usePrevious } from 'ahooks';
 import { Link } from 'umi';
-import { searchTaskDefinition } from '@/services/data-development/task-definitions';
 import useI18n from '@/hooks/useI18n';
 import useRedux from '@/hooks/useRedux';
 import { UsernameText } from '@/components/UsernameText';
@@ -54,21 +53,23 @@ export const TaskDefinitionTable: React.FC<Props> = memo(function TaskDefinition
     currentViewChangeEvent,
   } = props;
 
-  const { dispatch } = useRedux(state => state.dataDevelopment);
-
+  // const { state, dispatch } = useRedux(state => state.dataDevelopment);
+  const {
+    selector: { tasklist },
+    dispatch,
+  } = useRedux(state => ({
+    tasklist: state.dataDevelopment.taskList,
+  }));
+  const { data, loading, isInit } = tasklist;
   const [pageNum, setPageNum] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(25);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const t = useI18n();
 
-  const { data, loading, run: doFetch } = useRequest(searchTaskDefinition, {
-    debounceWait: 500,
-    manual: true,
-  });
-
+  const previous = usePrevious({ filters, taskDefViewId });
   useEffect(() => {
-    dispatch.dataDevelopment.setRecordCount(data?.totalCount ?? 0);
-  }, [data, dispatch.dataDevelopment]);
+    dispatch.dataDevelopment.setRecordCount(tasklist?.totalCount ?? 0);
+  }, [tasklist, dispatch.dataDevelopment]);
 
   useUpdateEffect(() => {
     // clear selected row keys when view changed
@@ -79,7 +80,13 @@ export const TaskDefinitionTable: React.FC<Props> = memo(function TaskDefinition
   }, [taskDefViewId]);
 
   useEffect(() => {
-    doFetch({
+    if (
+      previous &&
+      (JSON.stringify(previous?.filters) !== JSON.stringify(filters) || previous?.taskDefViewId !== taskDefViewId)
+    ) {
+      dispatch.dataDevelopment.updateTasklist({ isInit: false });
+    }
+    dispatch.dataDevelopment.fetchTaskList({
       pageNum,
       pageSize,
       name: filters.name,
@@ -88,11 +95,11 @@ export const TaskDefinitionTable: React.FC<Props> = memo(function TaskDefinition
       viewIds: taskDefViewId != null ? [taskDefViewId] : undefined,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doFetch, taskDefViewId, filters.taskTemplateName, filters.creatorIds, pageNum, pageSize, updateTime]);
+  }, [taskDefViewId, filters.taskTemplateName, filters.creatorIds, pageNum, pageSize, updateTime]);
 
   useDebouncedUpdateEffect(
     () => {
-      doFetch({
+      dispatch.dataDevelopment.fetchTaskList({
         pageNum,
         pageSize,
         name: filters.name,
@@ -271,14 +278,14 @@ export const TaskDefinitionTable: React.FC<Props> = memo(function TaskDefinition
         className={styles.TaskDefTable}
         data-tid="task-definition-table"
         columns={columns}
-        dataSource={data?.records || []}
+        dataSource={data || []}
         rowKey={rowKeyMapper}
         size="small"
-        loading={loading}
+        loading={loading && !isInit}
         onChange={handleTableChange}
         rowSelection={{
           ...generateAsyncAntdTableRowSelectionProps(
-            data?.records || [],
+            data || [],
             rowKeyMapper,
             selectedTaskDefIds ?? selectedRowKeys,
             setSelectedTaskDefIds ?? setSelectedRowKeys,
@@ -287,7 +294,7 @@ export const TaskDefinitionTable: React.FC<Props> = memo(function TaskDefinition
         pagination={{
           current: pageNum,
           pageSize,
-          total: data?.totalCount || 0,
+          total: tasklist.totalCount || 0,
           showTotal: (_total: number) => t('common.pagination.showTotal', { total: _total }),
         }}
       />

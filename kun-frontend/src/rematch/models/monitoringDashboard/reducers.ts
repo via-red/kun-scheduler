@@ -113,6 +113,6 @@ export const reducers = {
     draftState.dataDevelopmentBoardData.dailyStatisticList = {
       ...draftState.dataDevelopmentBoardData.dailyStatisticList,
       ...payload,
-    }
+    };
   }),
 };
