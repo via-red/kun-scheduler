@@ -30,6 +30,7 @@ import com.miotech.kun.workflow.testing.factory.MockTaskRunFactory;
 import com.miotech.kun.workflow.utils.DateTimeUtils;
 import com.miotech.kun.workflow.utils.WorkflowIdGenerator;
 import org.apache.commons.lang3.tuple.Triple;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -688,9 +689,10 @@ public class TaskRunServiceTest extends CommonTestBase {
         taskRunDao.createAttempt(taskAttempt1);
 
         TaskRunVO taskRunVO2 = taskRunService.convertToVO(taskRun2);
-
-        assertThat(taskRunVO2.getTask().getId(), is(task2.getId()));
-        assertThat(taskRunVO2.getFailedUpstreamTaskRuns().get(0).getId(), is(taskRun1.getId()));
+        TaskRunVO taskRunVO2WithoutAttempt = taskRunService.convertToVOWithoutAttempt(taskRun2);
+        MatcherAssert.assertThat(taskRunVO2.getTask().getId(), is(task2.getId()));
+        MatcherAssert.assertThat(taskRunVO2.getFailedUpstreamTaskRuns().get(0).getId(), is(taskRun1.getId()));
+        MatcherAssert.assertThat(taskRunVO2WithoutAttempt.getAttempts().isEmpty(), is(true));
     }
 
     @Test
